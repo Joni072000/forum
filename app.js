@@ -105,21 +105,142 @@ function prefixHtml(id, lg = false) {
   if (!p) return '';
   return `<span class="prefix${lg ? ' lg' : ''}" style="background:${esc(p.bg)};color:${esc(p.fg)}">${esc(p.name)}</span>`;
 }
-function inlineFmt(s) {
-  return s
-    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?]|$)/g, '$1<i>$2</i>')
-    .replace(/(https?:\/\/[^\s<"\[\]]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-}
+const SIZES = { 1: 'Klein', 2: 'Normal', 3: 'Groß', 4: 'Sehr groß', 5: 'Riesig' };
+const COLORS = ['#ff5c5c', '#ff9a3c', '#f5a524', '#ffe066', '#6fe0a6', '#5fb8ff', '#b28cff', '#ff7ac6', '#ffffff', '#8b95a5'];
 function renderBody(src) {
   let html = esc(src);
-  html = inlineFmt(html);
-  // Zitate (bis zu 3 Ebenen)
-  for (let i = 0; i < 3; i++) {
-    html = html.replace(/\[quote=([^\]\n]{1,40})\]\n?([\s\S]*?)\n?\[\/quote\]\n?/g,
-      (_, who, txt) => `<blockquote><cite>${who} schrieb:</cite>${txt}</blockquote>`);
+  // Link-Ziele erst sicher parken, damit die automatische Link-Erkennung sie nicht doppelt umbaut
+  const hrefs = [];
+  const park = (url) => { hrefs.push(url); return `\u0001${hrefs.length - 1}\u0001`; };
+  const okUrl = (u) => /^https?:\/\/[^\s<>"\u0001]+$/i.test(u);
+  html = html.replace(/\[url=([^\]\n]{1,500})\]([\s\S]{0,500}?)\[\/url\]/gi, (m, u, txt) =>
+    okUrl(u) ? `<a href="${park(u)}" target="_blank" rel="noopener noreferrer">${txt || park(u)}</a>` : m);
+  html = html.replace(/\[url\]([^\[\n]{1,500})\[\/url\]/gi, (m, u) =>
+    okUrl(u) ? `<a href="${park(u)}" target="_blank" rel="noopener noreferrer">${park(u)}</a>` : m);
+  // Markdown-Kurzformen (auch für Formular-Überschriften)
+  html = html
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?]|$)/g, '$1<i>$2</i>');
+  // automatische Links für freistehende Adressen
+  html = html.split(/(<a [^>]*>[\s\S]*?<\/a>)/).map((part, i) => (i % 2 ? part
+    : part.replace(/(https?:\/\/[^\s<"\[\]\u0001]+)/g, (u) => `<a href="${park(u)}" target="_blank" rel="noopener noreferrer">${park(u)}</a>`))).join('');
+  // BBCode, mehrfach für Verschachtelung
+  for (let i = 0; i < 4; i++) {
+    html = html
+      .replace(/\[b\]([\s\S]*?)\[\/b\]/gi, '<b>$1</b>')
+      .replace(/\[i\]([\s\S]*?)\[\/i\]/gi, '<i>$1</i>')
+      .replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<u>$1</u>')
+      .replace(/\[s\]([\s\S]*?)\[\/s\]/gi, '<s>$1</s>')
+      .replace(/\[size=([1-5])\]([\s\S]*?)\[\/size\]/gi, '<span class="fs-$1">$2</span>')
+      .replace(/\[color=(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>')
+      .replace(/\[center\]\n?([\s\S]*?)\n?\[\/center\]/gi, '<span class="al-center">$1</span>')
+      .replace(/\[quote=([^\]\n]{1,40})\]\n?([\s\S]*?)\n?\[\/quote\]\n?/g, (_, who, txt) => `<blockquote><cite>${who} schrieb:</cite>${txt}</blockquote>`);
   }
-  return html.split(/\n{2,}/).map((para) => `<p>${para.replace(/\n/g, '<br>')}</p>`).join('');
+  html = html.replace(/\u0001(\d+)\u0001/g, (_, n) => hrefs[Number(n)]);
+  return html.split(/\n{2,}/).map((para) => `<div class="para">${para.replace(/\n/g, '<br>')}</div>`).join('');
+}
+
+/* ---- Editor mit Formatierungsleiste ---- */
+document.addEventListener('click', (e) => {
+  $$('[data-ed-palette]').forEach((pal) => { if (!pal.parentElement.contains(e.target)) pal.classList.add('hidden'); });
+});
+const EDITOR_HINT = 'Text markieren und oben formatieren. Links werden auch automatisch erkannt.';
+function editorBar(id) {
+  return `<div class="ed-bar" role="toolbar" aria-label="Formatierung" data-ed="${id}">
+    <button type="button" class="ed-btn" data-ed-wrap="b" title="Fett" aria-label="Fett"><b>B</b></button>
+    <button type="button" class="ed-btn" data-ed-wrap="i" title="Kursiv" aria-label="Kursiv"><i>I</i></button>
+    <button type="button" class="ed-btn" data-ed-wrap="u" title="Unterstrichen" aria-label="Unterstrichen"><u>U</u></button>
+    <button type="button" class="ed-btn" data-ed-wrap="s" title="Durchgestrichen" aria-label="Durchgestrichen"><s>S</s></button>
+    <span class="ed-sep" aria-hidden="true"></span>
+    <select class="ed-select" data-ed-size aria-label="Schriftgröße">
+      <option value="">Größe</option>
+      ${Object.entries(SIZES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+    </select>
+    <span class="ed-color-wrap">
+      <button type="button" class="ed-btn" data-ed-colors title="Schriftfarbe" aria-label="Schriftfarbe" aria-haspopup="true">
+        <span class="ed-color-a">A</span><span class="ed-color-line" data-ed-last-color></span>
+      </button>
+      <span class="ed-palette hidden" data-ed-palette>
+        ${COLORS.map((c) => `<button type="button" class="ed-swatch" style="background:${c}" data-ed-color="${c}" aria-label="Farbe ${c}"></button>`).join('')}
+        <label class="ed-custom" title="Eigene Farbe"><input type="color" data-ed-custom value="#f5a524" aria-label="Eigene Farbe"></label>
+      </span>
+    </span>
+    <span class="ed-sep" aria-hidden="true"></span>
+    <button type="button" class="ed-btn" data-ed-link title="Link einfügen" aria-label="Link einfügen">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"></path></svg>
+    </button>
+    <button type="button" class="ed-btn" data-ed-wrap="center" title="Zentrieren" aria-label="Zentrieren">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M5 18h14"></path></svg>
+    </button>
+    <span class="ed-spacer"></span>
+    <button type="button" class="ed-btn ed-preview-btn" data-ed-preview aria-pressed="false">Vorschau</button>
+  </div>`;
+}
+function editorHtml(id, attrs = '', value = '') {
+  return `<div class="ed">${editorBar(id)}<textarea id="${id}" class="ed-text" ${attrs}>${esc(value)}</textarea><div class="ed-prev post-body hidden" data-ed-prev="${id}"></div></div>`;
+}
+function wrapSel(ta, open, close, placeholder = '') {
+  const s0 = ta.selectionStart, s1 = ta.selectionEnd;
+  const sel = ta.value.slice(s0, s1) || placeholder;
+  ta.value = ta.value.slice(0, s0) + open + sel + close + ta.value.slice(s1);
+  ta.focus();
+  ta.selectionStart = s0 + open.length;
+  ta.selectionEnd = s0 + open.length + sel.length;
+  ta.dispatchEvent(new Event('input'));
+}
+function bindEditors(root = document) {
+  $$('.ed-bar', root).forEach((bar) => {
+    if (bar.dataset.bound) return;
+    bar.dataset.bound = '1';
+    const ta = document.getElementById(bar.dataset.ed);
+    const prev = $(`[data-ed-prev="${bar.dataset.ed}"]`, bar.parentElement);
+    $$('[data-ed-wrap]', bar).forEach((b) => b.onclick = () => wrapSel(ta, `[${b.dataset.edWrap}]`, `[/${b.dataset.edWrap}]`));
+    const size = $('[data-ed-size]', bar);
+    size.onchange = () => { if (size.value) wrapSel(ta, `[size=${size.value}]`, '[/size]'); size.value = ''; };
+    const pal = $('[data-ed-palette]', bar);
+    const line = $('[data-ed-last-color]', bar);
+    const applyColor = (c) => { wrapSel(ta, `[color=${c}]`, '[/color]'); line.style.background = c; pal.classList.add('hidden'); };
+    $('[data-ed-colors]', bar).onclick = (e) => { e.stopPropagation(); pal.classList.toggle('hidden'); };
+    $$('[data-ed-color]', bar).forEach((b) => b.onclick = () => applyColor(b.dataset.edColor));
+    const custom = $('[data-ed-custom]', bar);
+    custom.onchange = () => applyColor(custom.value);
+    $('[data-ed-link]', bar).onclick = () => {
+      const s0 = ta.selectionStart, s1 = ta.selectionEnd;
+      const selected = ta.value.slice(s0, s1);
+      openModal({
+        title: 'Link einfügen',
+        confirmText: 'Einfügen',
+        body: `<div class="field"><label for="lk-text">Angezeigter Text</label><input id="lk-text" maxlength="200" value="${esc(selected)}" placeholder="z. B. Unser Regelwerk"></div>
+          <div class="field"><label for="lk-url">Adresse</label><input id="lk-url" maxlength="500" placeholder="https://…"><span class="hint">Muss mit http:// oder https:// beginnen.</span></div>`,
+        onConfirm: (m) => {
+          let url = $('#lk-url', m).value.trim();
+          if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+          if (!/^https?:\/\/[^\s<>"\]\[]+$/i.test(url)) { toast('Bitte eine gültige Adresse eingeben.', true); return false; }
+          const text = $('#lk-text', m).value.trim().replace(/\[\/?url[^\]]*\]/gi, '');
+          const insert = text ? `[url=${url}]${text}[/url]` : `[url]${url}[/url]`;
+          ta.value = ta.value.slice(0, s0) + insert + ta.value.slice(s1);
+          ta.focus();
+          ta.selectionStart = ta.selectionEnd = s0 + insert.length;
+        },
+      });
+    };
+    const pbtn = $('[data-ed-preview]', bar);
+    pbtn.onclick = () => {
+      const on = prev.classList.contains('hidden');
+      if (on) prev.innerHTML = ta.value.trim() ? renderBody(ta.value) : '<span class="muted">Noch nichts geschrieben.</span>';
+      prev.classList.toggle('hidden', !on);
+      ta.classList.toggle('hidden', on);
+      pbtn.setAttribute('aria-pressed', String(on));
+      pbtn.textContent = on ? 'Bearbeiten' : 'Vorschau';
+      $$('.ed-btn:not([data-ed-preview]), .ed-select', bar).forEach((x) => { x.disabled = on; });
+    };
+    ta.addEventListener('invalid', () => { if (ta.classList.contains('hidden')) pbtn.click(); });
+    ta.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === 'b' || k === 'i' || k === 'u') { e.preventDefault(); wrapSel(ta, `[${k}]`, `[/${k}]`); }
+    });
+  });
 }
 function stripQuotes(s) { return s.replace(/\[quote=[^\]]*\][\s\S]*?\[\/quote\]\n?/g, '').trim(); }
 
@@ -554,8 +675,8 @@ async function pageThread(id, pageArg) {
             <form class="box-body" id="reply-form">
               <div class="field">
                 <label for="reply-body">Deine Antwort</label>
-                <textarea id="reply-body" name="body" required maxlength="20000"></textarea>
-                <span class="hint">**fett**, *kursiv*, Links werden automatisch erkannt.</span>
+                ${editorHtml('reply-body', 'name="body" required maxlength="20000"')}
+                <span class="hint">${EDITOR_HINT}</span>
               </div>
               <button class="btn primary" type="submit">Antwort senden</button>
             </form>
@@ -563,10 +684,12 @@ async function pageThread(id, pageArg) {
       </main>
     </div>`;
 
+  bindEditors(app());
   const postById = new Map((posts || []).map((p) => [String(p.id), p]));
   $$('[data-quote]').forEach((b) => b.onclick = () => {
     const p = postById.get(b.dataset.quote);
     const ta = $('#reply-body');
+    if (ta.classList.contains('hidden')) $('.ed-bar[data-ed="reply-body"] [data-ed-preview]').click();
     const who = people.get(p.author_id)?.username || 'Jemand';
     ta.value += `[quote=${who}]${stripQuotes(p.body)}[/quote]\n`;
     ta.focus();
@@ -575,12 +698,13 @@ async function pageThread(id, pageArg) {
   $$('[data-edit]').forEach((b) => b.onclick = () => {
     const p = postById.get(b.dataset.edit);
     const bodyEl = $(`[data-body="${p.id}"]`);
-    bodyEl.innerHTML = `<textarea class="input" aria-label="Beitrag bearbeiten" style="min-height:180px">${esc(p.body)}</textarea>
+    bodyEl.innerHTML = `${editorHtml('edit-' + p.id, 'aria-label="Beitrag bearbeiten" style="min-height:180px"', p.body)}
       <div class="row" style="margin-top:8px"><button type="button" class="btn primary sm" data-save>Speichern</button><button type="button" class="btn sm" data-cancel>Abbrechen</button></div>`;
     b.closest('.post-actions').classList.add('hidden');
+    bindEditors(bodyEl);
     $('[data-cancel]', bodyEl).onclick = () => route();
     $('[data-save]', bodyEl).onclick = async () => {
-      const val = $('textarea', bodyEl).value.trim();
+      const val = $(`#edit-${p.id}`).value.trim();
       if (!val) return toast('Der Beitrag darf nicht leer sein.', true);
       const { error } = await sb.from('posts').update({ body: val }).eq('id', p.id);
       if (error) return toast(errMsg(error), true);
@@ -675,19 +799,20 @@ async function pageNewThread(forumId) {
               <div class="field">
                 <label for="ff${i}">${esc(fld.label)} ${fld.required ? '<span class="req">*</span>' : ''}</label>
                 ${fld.type === 'textarea'
-                  ? `<textarea id="ff${i}" data-ff="${i}" ${fld.required ? 'required' : ''} maxlength="4000" style="min-height:110px"></textarea>`
+                  ? editorHtml(`ff${i}`, `data-ff="${i}" ${fld.required ? 'required' : ''} maxlength="4000" style="min-height:110px"`)
                   : `<input id="ff${i}" data-ff="${i}" ${fld.required ? 'required' : ''} maxlength="300">`}
               </div>`).join('')}
             <div class="field">
               <label for="nt-body">${fields.length ? 'Weitere Angaben (optional)' : 'Text <span class="req">*</span>'}</label>
-              <textarea id="nt-body" name="body" ${fields.length ? '' : 'required'} maxlength="15000"></textarea>
-              <span class="hint">**fett**, *kursiv*, Links werden automatisch erkannt.</span>
+              ${editorHtml('nt-body', `name="body" ${fields.length ? '' : 'required'} maxlength="15000"`)}
+              <span class="hint">${EDITOR_HINT}</span>
             </div>
             <div class="row"><button class="btn primary" type="submit">Thema erstellen</button><a class="btn" href="#/f/${f.id}">Abbrechen</a></div>
           </div>
         </form>
       </main>
     </div>`;
+  bindEditors(app());
   $('#nt-form').onsubmit = async (e) => {
     e.preventDefault();
     const title = $('#nt-title').value.trim();
@@ -862,7 +987,7 @@ async function pageSettings() {
       ${p.avatar_url ? '<button type="button" class="btn sm" id="av-remove" style="margin-top:8px">Bild entfernen</button>' : ''}</div>
     </div></section>
     <section class="box"><h2 class="box-head">Über mich</h2><form class="box-body" id="about-form">
-      <div class="field"><label for="about">Text auf deinem Profil</label><textarea id="about" maxlength="2000">${esc(p.about || '')}</textarea></div>
+      <div class="field"><label for="about">Text auf deinem Profil</label>${editorHtml('about', 'maxlength="2000"', p.about || '')}</div>
       <button class="btn primary" type="submit">Speichern</button>
     </form></section>
     <section class="box"><h2 class="box-head">Passwort ändern</h2><form class="box-body" id="pw-form">
@@ -873,6 +998,7 @@ async function pageSettings() {
       <button class="btn primary" type="submit">Passwort ändern</button>
     </form></section>
   </main></div>`;
+  bindEditors(app());
   $('#av-file').onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
