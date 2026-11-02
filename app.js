@@ -71,8 +71,38 @@ const icons = {
   pin: '<svg aria-hidden="true" class="lock-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5M5 17h14l-2-4V5H7v8z"></path></svg>',
   eye: '<svg aria-hidden="true" class="lock-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
   bell: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10 21h4"></path></svg>',
-  search: '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b95a5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>',
+  search: '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#97adb1" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>',
+  chev: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg>',
 };
+/* Forum-Icons: werden anhand des Forennamens gewählt */
+const ICON_PATHS = {
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>',
+  megaphone: '<path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"></path><path d="M16 8a5 5 0 0 1 0 8"></path><path d="M19 5a9 9 0 0 1 0 14"></path>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M9 14l2 2 4-4"></path>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>',
+  gavel: '<path d="M14 13l-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10"></path><path d="M16 16l6-6"></path><path d="M8 8l6-6"></path><path d="M9 7l8 8"></path><path d="M21 11l-8-8"></path>',
+  unlock: '<rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path>',
+  help: '<circle cx="12" cy="12" r="10"></circle><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path>',
+  bubble: '<path d="M4 5h16v11H8l-4 4z"></path>',
+};
+function forumIcon(name) {
+  const n = String(name || '').toLowerCase();
+  const k = /regel/.test(n) ? 'book'
+    : /ankünd|ankuend|news|neuigkeit|update/.test(n) ? 'megaphone'
+    : /bewerb/.test(n) ? 'clipboard'
+    : /beschwer/.test(n) ? 'gavel'
+    : /entbann|bann|sperr/.test(n) ? 'unlock'
+    : /staat|polizei|lspd|lsmd|ems|rettung|fbi|justiz|regierung/.test(n) ? 'shield'
+    : /gang|famil|ghetto|crew/.test(n) ? 'users'
+    : /privat|firma|unternehm|organisation|business/.test(n) ? 'briefcase'
+    : /support|hilfe|frage/.test(n) ? 'help'
+    : 'bubble';
+  return `<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[k]}</svg>`;
+}
+function storeGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+function storeSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (_) { /* egal */ } }
 
 /* ---- Rechte ---- */
 const myRank = () => (state.me ? state.rankById.get(state.me.rank_id) : null);
@@ -87,7 +117,7 @@ function rankOf(p) { return p ? state.rankById.get(p.rank_id) : null; }
 function nameHtml(p, link = true) {
   if (!p) return '<span class="muted">Gelöschtes Mitglied</span>';
   const r = rankOf(p);
-  const inner = `<span class="uname" style="color:${esc(r?.color || '#e8ecf3')}">${esc(p.username)}</span>`;
+  const inner = `<span class="uname" style="color:${esc(r?.color || '#eef6f7')}">${esc(p.username)}</span>`;
   return link ? `<a href="#/u/${encodeURIComponent(p.username)}">${inner}</a>` : inner;
 }
 function rankBadge(p) {
@@ -162,7 +192,7 @@ function editorBar(id) {
       </button>
       <span class="ed-palette hidden" data-ed-palette>
         ${COLORS.map((c) => `<button type="button" class="ed-swatch" style="background:${c}" data-ed-color="${c}" aria-label="Farbe ${c}"></button>`).join('')}
-        <label class="ed-custom" title="Eigene Farbe"><input type="color" data-ed-custom value="#f5a524" aria-label="Eigene Farbe"></label>
+        <label class="ed-custom" title="Eigene Farbe"><input type="color" data-ed-custom value="#2ee6d6" aria-label="Eigene Farbe"></label>
       </span>
     </span>
     <span class="ed-sep" aria-hidden="true"></span>
@@ -317,7 +347,10 @@ async function loadBase() {
 function applySettings() {
   const n = state.settings.site_name || 'Forum';
   document.title = n + ' – Forum';
-  $('#brand-name').textContent = n;
+  const words = n.trim().split(/\s+/);
+  $('#brand-name').innerHTML = words.length > 1
+    ? `${esc(words[0])} <span class="accent">${esc(words.slice(1).join(' '))}</span>`
+    : esc(n);
   $('#foot-name').textContent = '© ' + new Date().getFullYear() + ' ' + n;
   const letters = n.replace(/[^A-Za-z0-9ÄÖÜäöü]/g, '').slice(0, 2).toUpperCase() || 'F';
   $('#brand-mark').textContent = letters;
@@ -468,8 +501,16 @@ function setActiveNav(key) {
 
 /* ================= Seitenleiste ================= */
 function sidebarHtml() {
+  const login = state.me ? '' : `
+      <section class="box"><form class="box-body side side-login" id="side-login">
+        <h2>Anmelden</h2>
+        <div class="field"><label for="sl-u">Benutzername</label><input id="sl-u" name="u" required autocomplete="username"></div>
+        <div class="field"><label for="sl-p">Passwort</label><input id="sl-p" name="p" type="password" required autocomplete="current-password"></div>
+        <button class="btn primary" type="submit">Anmelden</button>
+        <p class="small muted" style="margin:12px 0 0;text-align:center">Noch kein Konto? <a href="#/registrieren" style="color:var(--accent);font-weight:600">Jetzt registrieren</a></p>
+      </form></section>`;
   return `
-    <aside class="side-col">
+    <aside class="side-col">${login}
       <section class="box"><div class="box-body side">
         <h2>Neueste Themen</h2>
         <div id="side-latest" class="loading" style="padding:8px">Lädt …</div>
@@ -479,7 +520,7 @@ function sidebarHtml() {
         <div class="chips">${state.prefixes.map((p) => prefixHtml(p.id, true)).join('')}</div>
       </div></section>
       <section class="box"><div class="box-body side">
-        <h2>Gerade online</h2>
+        <h2>Mitglieder online</h2>
         <div id="online-list" style="display:flex;flex-wrap:wrap;gap:4px 6px"></div>
         <div class="small muted" style="margin-top:12px">Ränge: ${state.ranks.map((r) => `<span style="color:${esc(r.color)}">${esc(r.name)}</span>`).join(' · ')}</div>
       </div></section>
@@ -487,6 +528,16 @@ function sidebarHtml() {
 }
 async function fillSidebar() {
   renderOnline();
+  const lf = $('#side-login');
+  if (lf) lf.onsubmit = async (e) => {
+    e.preventDefault();
+    const u = e.target.u.value.trim();
+    const btn = $('button', e.target); btn.disabled = true;
+    const { error } = await sb.auth.signInWithPassword({ email: `${u.toLowerCase()}@${LOGIN_DOMAIN}`, password: e.target.p.value });
+    btn.disabled = false;
+    if (error) return toast(errMsg(error), true);
+    toast('Willkommen zurück!');
+  };
   const el = $('#side-latest');
   if (!el) return;
   const { data } = await sb.from('threads').select('id, title, prefix_id, last_post_at, last_post_by, forum_id').order('last_post_at', { ascending: false }).limit(6);
@@ -511,43 +562,85 @@ async function pageHome() {
   const visibleForums = (forums.data || []).filter((f) => f.view_rank <= myPos());
   const statMap = new Map((stats.data || []).map((s) => [s.forum_id, s]));
   const lastMap = new Map((last.data || []).map((s) => [s.forum_id, s]));
-  const people = await profilesByIds((last.data || []).map((l) => l.last_post_by));
+  const lastIds = (last.data || []).map((l) => l.thread_id).filter(Boolean);
+  const [people, pre] = await Promise.all([
+    profilesByIds((last.data || []).map((l) => l.last_post_by)),
+    lastIds.length ? sb.from('threads').select('id, prefix_id').in('id', lastIds) : Promise.resolve({ data: [] }),
+  ]);
+  const prefixOf = new Map((pre.data || []).map((t) => [t.id, t.prefix_id]));
+  const closed = new Set((storeGet('closed-cats') || '').split(',').filter(Boolean));
+  const name = state.settings.site_name || 'Forum';
+  const word = name.trim().split(/\s+/)[0].toUpperCase();
+
   const sections = (cats.data || []).map((c) => {
     const fs = visibleForums.filter((f) => f.category_id === c.id);
     if (!fs.length) return '';
-    return `<section class="box">
-      <h2 class="box-head">${esc(c.title)}</h2>
+    const isClosed = closed.has(String(c.id));
+    return `<section class="cat ${isClosed ? 'closed' : ''}" data-cat="${c.id}">
+      <div class="cat-head">
+        <h2>${esc(c.title)}</h2>
+        <button type="button" class="cat-toggle" data-cat-toggle="${c.id}" aria-controls="cat-body-${c.id}" aria-expanded="${isClosed ? 'false' : 'true'}" aria-label="${esc(c.title)} ein- oder ausklappen">${icons.chev}</button>
+      </div>
+      <div class="box cat-body" id="cat-body-${c.id}">
       ${fs.map((f) => {
         const s = statMap.get(f.id) || { threads: 0, posts: 0 };
         const l = lastMap.get(f.id);
         const fresh = l && Date.now() - new Date(l.last_post_at).getTime() < 86400000;
+        const who = l ? people.get(l.last_post_by) : null;
         return `<div class="node">
-          <span class="node-icon ${fresh ? 'has-new' : ''}">${icons.bubble}</span>
+          <span class="node-icon ${fresh ? 'has-new' : ''}">${forumIcon(f.name)}</span>
           <div style="min-width:0">
-            <a href="#/f/${f.id}" class="node-title">${esc(f.name)}</a>${f.private_rank != null ? `<span title="Themen sind privat" aria-label="private Themen">${icons.eye}</span>` : ''}${f.view_rank > 1 ? `<span title="Nur für bestimmte Ränge sichtbar" aria-label="eingeschränkt">${icons.lock}</span>` : ''}
-            <div class="node-desc">${esc(f.description)}</div>
+            <a href="#/f/${f.id}" class="node-title">${esc(f.name)}</a>${fresh ? '<span class="new-badge">NEU</span>' : ''}${f.private_rank != null ? `<span title="Themen sind privat" aria-label="private Themen">${icons.eye}</span>` : ''}${f.view_rank > 1 ? `<span title="Nur für bestimmte Ränge sichtbar" aria-label="eingeschränkt">${icons.lock}</span>` : ''}
+            ${f.description ? `<div class="node-desc">${esc(f.description)}</div>` : ''}
           </div>
-          <div class="node-stats"><b>${s.threads}</b> Themen<br><b>${s.posts}</b> Beiträge</div>
-          <div class="node-last">${l ? `<a href="#/t/${l.thread_id}/last">${esc(l.title)}</a>${fmtDate(l.last_post_at)} · ${nameHtml(people.get(l.last_post_by))}` : 'Noch keine Themen'}</div>
+          <div class="node-nums"><div><b>${s.threads}</b><span>Themen</span></div><div><b>${s.posts}</b><span>Beiträge</span></div></div>
+          <div class="node-last">${l ? `${avatar(who, 36)}<div class="meta"><div style="display:flex;align-items:center;gap:6px;min-width:0">${prefixHtml(prefixOf.get(l.thread_id))}<a class="t" href="#/t/${l.thread_id}/last">${esc(l.title)}</a></div><div class="muted">${fmtDate(l.last_post_at)} · ${nameHtml(who)}</div></div>` : '<span class="muted">Noch keine Beiträge</span>'}</div>
         </div>`;
       }).join('')}
+      </div>
     </section>`;
   }).join('');
+
+  const heroButtons = state.me
+    ? `${!isBanned() ? '<a class="btn primary" href="#/neu">Neues Thema erstellen</a>' : ''}<a class="btn ghost" href="#/neue">Neue Beiträge ansehen</a>`
+    : '<a class="btn primary" href="#/registrieren">Jetzt registrieren</a><a class="btn ghost" href="#/login">Anmelden</a>';
   app().innerHTML = `
+    <section class="hero">
+      <div class="hero-word" aria-hidden="true">${esc(word)}</div>
+      <div class="hero-inner">
+        <h1>${state.me ? `Willkommen zurück, ${esc(state.me.username)}!` : `Willkommen bei ${esc(name)}!`}</h1>
+        <p>${state.me ? (state.settings.site_tagline ? esc(state.settings.site_tagline) : 'Schön, dass du da bist.') : 'Registriere dich, um Themen zu erstellen, Bewerbungen abzugeben und mit der ganzen Community zu schreiben.'}</p>
+        <div class="row">${heroButtons}</div>
+      </div>
+    </section>
     <div class="wrap page">
       <main>
         ${isBanned() ? '<div class="notice err">Dein Konto ist gesperrt. Du kannst lesen, aber nichts schreiben.</div>' : ''}
-        <div class="titlebar">
-          <div><h1>${esc(state.settings.site_name)}</h1>${state.settings.site_tagline ? `<div class="muted">${esc(state.settings.site_tagline)}</div>` : ''}</div>
+        <div class="toolbar">
+          <div class="links">
+            <a href="#/neue">Neue Beiträge</a>
+            <button type="button" id="tb-search">Foren durchsuchen</button>
+            <a href="#/team">Teamliste</a>
+          </div>
           ${state.me && !isBanned() ? '<a class="btn primary" href="#/neu">Neues Thema</a>' : ''}
         </div>
         ${sections || '<div class="box"><div class="empty">Noch keine Bereiche angelegt.</div></div>'}
       </main>
       ${sidebarHtml()}
     </div>`;
+  $('#tb-search').onclick = () => { const i = $('#search-form input'); if (i) { i.focus(); i.scrollIntoView({ block: 'center' }); } };
+  $$('[data-cat-toggle]').forEach((b) => {
+    b.onclick = () => {
+      const sec = b.closest('.cat');
+      const nowClosed = sec.classList.toggle('closed');
+      b.setAttribute('aria-expanded', nowClosed ? 'false' : 'true');
+      const id = b.dataset.catToggle;
+      if (nowClosed) closed.add(id); else closed.delete(id);
+      storeSet('closed-cats', [...closed].join(',') || null);
+    };
+  });
   fillSidebar();
 }
-
 async function pageForum(id, page = 1) {
   setActiveNav('home');
   const { data: f } = await sb.from('forums').select('*, categories(title)').eq('id', id).maybeSingle();
@@ -571,7 +664,7 @@ async function pageForum(id, page = 1) {
         </div>
         ${f.private_rank != null ? '<div class="notice info">In diesem Forum sieht jeder nur seine eigenen Themen. Das Team ab dem zuständigen Rang sieht alle.</div>' : ''}
         <div class="chips" aria-label="Nach Status filtern">
-          <button type="button" class="prefix lg chip-btn ${filter ? 'off' : ''}" style="background:#222937;color:#e8ecf3" data-pf="">Alle</button>
+          <button type="button" class="prefix lg chip-btn ${filter ? 'off' : ''}" style="background:#22302f;color:#eef6f7" data-pf="">Alle</button>
           ${usedPrefixes.map((p) => `<button type="button" class="prefix lg chip-btn ${filter && filter !== String(p.id) ? 'off' : ''}" style="background:${esc(p.bg)};color:${esc(p.fg)}" data-pf="${p.id}">${esc(p.name)}</button>`).join('')}
         </div>
         <section class="box">
