@@ -1187,7 +1187,7 @@ function pageRegister() {
       <div class="field"><label for="ru">Benutzername</label><input id="ru" name="u" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_\\-]{3,20}" autocomplete="username"><span class="hint">3–20 Zeichen: Buchstaben, Zahlen, _ und -. Kann später nicht geändert werden.</span></div>
       <div class="field"><label for="rp">Passwort</label><input id="rp" name="p" type="password" required minlength="6" maxlength="72" autocomplete="new-password"></div>
       <div class="field"><label for="rp2">Passwort wiederholen</label><input id="rp2" name="p2" type="password" required minlength="6" maxlength="72" autocomplete="new-password"></div>
-      <label class="check" style="margin-bottom:16px"><input type="checkbox" name="ok" required> <span class="small">Ich habe die <a href="#/datenschutz" target="_blank">Datenschutzhinweise</a> gelesen.</span></label>
+      <label class="check" style="margin-bottom:16px"><input type="checkbox" name="ok" required> <span class="small">Ich habe die <a href="#/datenschutz" target="_blank">Datenschutzerklärung</a> gelesen.</span></label>
       <button class="btn primary" style="width:100%" type="submit">Konto erstellen</button>
       <p class="small muted" style="margin:14px 0 0">Schon registriert? <a href="#/login">Anmelden</a></p>
     </form></div></div>`;
@@ -1209,14 +1209,87 @@ function pageRegister() {
 
 function pagePrivacy() {
   setActiveNav('');
-  const n = esc(state.settings.site_name);
-  app().innerHTML = `<div class="wrap page full"><main><section class="box"><h1 class="box-head" style="font-size:14px">Datenschutz</h1><div class="box-body post-body">
-    <p><b>Wer betreibt das Forum?</b><br>Das Forum von ${n} ist ein privates Hobbyprojekt für die Spieler unseres FiveM-Servers. Bei Fragen wende dich an die Projektleitung im Forum.</p>
-    <p><b>Welche Daten werden gespeichert?</b><br>Dein Benutzername, dein Passwort (nur verschlüsselt), deine Themen und Beiträge, dein Profilbild und dein „Über mich“-Text, wenn du sie hochlädst, sowie Benachrichtigungen. Eine E-Mail-Adresse wird nicht abgefragt.</p>
-    <p><b>Wo liegen die Daten?</b><br>Die Daten liegen bei Supabase in einem Rechenzentrum in Frankfurt am Main. Die Website selbst wird über GitHub Pages ausgeliefert. Dabei werden technisch notwendige Verbindungsdaten wie deine IP-Adresse verarbeitet. Schriftarten werden von Google Fonts geladen.</p>
-    <p><b>Wer sieht was?</b><br>Beiträge in öffentlichen Foren sind für alle sichtbar, auch ohne Anmeldung. Beschwerden gegen Teammitglieder sieht nur die Projektleitung.</p>
-    <p><b>Löschen</b><br>Du kannst jederzeit verlangen, dass dein Konto gelöscht wird. Schreib dazu der Projektleitung.</p>
-    <p><b>Gespeichert im Browser</b><br>Damit du angemeldet bleibst, speichert die Seite eine Anmelde-Sitzung im lokalen Speicher deines Browsers.</p>
+  const s = state.settings;
+  const n = esc(s.site_name || 'Forum');
+  const missing = '<span class="priv-missing">[noch nicht eingetragen]</span>';
+  const owner = s.privacy_name ? esc(s.privacy_name) : missing;
+  const addr = s.privacy_address ? esc(s.privacy_address).replace(/\n/g, '<br>') : missing;
+  const contact = s.privacy_contact ? esc(s.privacy_contact) : missing;
+  const incomplete = !s.privacy_name || !s.privacy_address || !s.privacy_contact;
+  app().innerHTML = `<div class="wrap page full"><main><section class="box"><h1 class="box-head" style="font-size:14px">Datenschutzerklärung</h1><div class="box-body post-body privacy">
+    ${incomplete && isManager() ? '<div class="notice info">Hinweis für die Verwaltung: Bitte unter <a href="#/admin/allgemein">Verwaltung → Allgemein</a> Name, Anschrift und Kontakt des Verantwortlichen eintragen. Ohne diese Angaben ist die Datenschutzerklärung nicht vollständig.</div>' : ''}
+    <p class="muted small">Stand: 5. November 2026</p>
+    <p>Hier erfährst du, welche personenbezogenen Daten beim Besuch und bei der Nutzung des Forums von ${n} verarbeitet werden, wozu das geschieht und welche Rechte du hast. Grundlage ist die Datenschutz-Grundverordnung (DSGVO) und das Telekommunikation-Digitale-Dienste-Datenschutz-Gesetz (TDDDG).</p>
+
+    <h2>1. Verantwortlicher</h2>
+    <p>Verantwortlich für die Datenverarbeitung in diesem Forum ist:<br>${owner}<br>${addr}<br>Kontakt: ${contact}</p>
+    <p>Das Forum ist ein privates, nicht kommerzielles Hobbyprojekt für die Community des FiveM-Servers ${n}. Es gibt keine Werbung, kein Tracking und keine Analyse-Werkzeuge. Ein Datenschutzbeauftragter ist nicht bestellt, weil dazu keine gesetzliche Pflicht besteht.</p>
+
+    <h2>2. Aufruf der Website</h2>
+    <p>Die Website wird über <b>GitHub Pages</b> ausgeliefert, einen Dienst der GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. Bei jedem Aufruf verarbeitet GitHub technisch notwendige Verbindungsdaten: deine IP-Adresse, Datum und Uhrzeit, die aufgerufene Datei, Browser- und Systemangaben sowie die zuvor besuchte Seite. Diese Daten braucht GitHub, um die Seite auszuliefern und vor Angriffen zu schützen; laut GitHub werden sie nur begrenzte Zeit gespeichert.</p>
+    <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Unser berechtigtes Interesse liegt in einer sicheren und funktionierenden Bereitstellung des Forums. GitHub ist nach dem EU-US Data Privacy Framework zertifiziert, das nach Art. 45 DSGVO ein angemessenes Datenschutzniveau für die Übermittlung in die USA sicherstellt. Mehr dazu: <a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">Datenschutzerklärung von GitHub</a>.</p>
+    <p>Schriftarten und alle übrigen Dateien der Seite liegen direkt bei uns. Beim Aufruf werden keine Daten an Google oder andere Schriftarten- oder Inhaltsanbieter übertragen.</p>
+
+    <h2>3. Datenbank und Speicherung (Supabase)</h2>
+    <p>Konten, Beiträge, Profilbilder und Benachrichtigungen werden bei <b>Supabase</b> gespeichert, einem Dienst der Supabase Pte. Ltd., Singapur. Die Datenbank liegt in einem Rechenzentrum in <b>Frankfurt am Main</b> (Region eu-central-1). Supabase verarbeitet die Daten als Auftragsverarbeiter nach Art. 28 DSGVO auf Grundlage eines Auftragsverarbeitungsvertrags. Soweit Supabase oder seine Unterauftragnehmer Daten außerhalb der EU verarbeiten, ist das durch die Standardvertragsklauseln der EU-Kommission abgesichert (Art. 46 Abs. 2 lit. c DSGVO).</p>
+    <p>Bei jeder Anfrage an die Datenbank (zum Beispiel beim Laden eines Themas oder beim Anmelden) verarbeitet Supabase technisch notwendige Verbindungsdaten wie deine IP-Adresse und den Zeitpunkt. Diese Protokolle dienen dem Betrieb und der Sicherheit und werden nach kurzer Zeit automatisch gelöscht. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Mehr dazu: <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">Datenschutzerklärung von Supabase</a>.</p>
+
+    <h2>4. Registrierung und Benutzerkonto</h2>
+    <p>Für ein Konto brauchst du nur einen <b>Benutzernamen</b> und ein <b>Passwort</b>. Eine E-Mail-Adresse, dein echter Name oder andere Angaben werden nicht abgefragt. Intern legt das System dafür eine Platzhalter-Adresse an (dein Benutzername mit einer Domain, an die nie Post zugestellt werden kann); sie wird nirgends angezeigt und nicht benutzt. Das Passwort wird nur als nicht umkehrbarer Prüfwert (Hash) gespeichert; niemand im Team kann es lesen. Hast du dein Passwort vergessen, kann die Verwaltung dir ein neues setzen. Zu deinem Konto werden außerdem gespeichert: das Datum der Registrierung, der Zeitpunkt deiner letzten Anmeldung, dein Rang, die Anzahl deiner Beiträge und ob dein Konto gesperrt ist.</p>
+    <p>Benutzername und Passwort sind Pflicht, ohne sie kann kein Konto angelegt werden. Lesen kannst du öffentliche Bereiche auch ohne Konto. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, weil diese Daten nötig sind, um dir die Nutzung des Forums zu ermöglichen.</p>
+
+    <h2>5. Themen, Beiträge, Bewerbungen und Anträge</h2>
+    <p>Wenn du ein Thema oder einen Beitrag schreibst, werden der Inhalt, dein Benutzername und der Zeitpunkt gespeichert, bei Änderungen auch der Zeitpunkt der Bearbeitung. Das gilt auch für Bewerbungen, Beschwerden und Entbannungsanträge, die du über die Formulare im Forum abgibst. Beschwerden können Angaben über andere Mitglieder oder Spieler enthalten; sie werden nur vom zuständigen Team gelesen und nur zur Klärung des Falls genutzt.</p>
+    <p><b>Wer sieht was?</b> Beiträge in öffentlichen Foren sind für alle sichtbar, auch für Besucher ohne Konto. Manche Foren sind nur für bestimmte Ränge sichtbar. In privaten Foren (zum Beispiel Bewerbungen oder Beschwerden) sieht nur der Ersteller sein eigenes Thema und das zuständige Team ab einem festgelegten Rang. Das Team kann Beiträge zur Moderation bearbeiten, verschieben, schließen oder löschen.</p>
+    <p>Bitte gib in Beiträgen und Bewerbungen nur das an, was nötig ist. Schreib keine Telefonnummern, Adressen oder andere sensible Daten über dich oder andere ins Forum.</p>
+    <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung des Forums) sowie für die Moderation Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem geordneten Forum und einem regelgerechten Spielbetrieb auf dem Server).</p>
+
+    <h2>6. Profil, Profilbild und Mitgliederliste</h2>
+    <p>Freiwillig kannst du ein <b>Profilbild</b> hochladen und einen <b>„Über mich“-Text</b> schreiben. Beides ist öffentlich auf deinem Profil sichtbar. Profilbilder werden bei Supabase gespeichert und sind über eine öffentliche Adresse abrufbar. Benutzername, Rang, Profilbild, Registrierungsdatum, Beitragszahl und deine letzten Themen sind auf deinem Profil sichtbar, Benutzername, Rang und Profilbild auch in der Mitgliederliste, Teammitglieder zusätzlich auf der Team-Seite. Ist ein Konto gesperrt, wird das im Profil und in der Mitgliederliste mit dem Hinweis „gesperrt“ angezeigt. Du kannst Profilbild und Text jederzeit selbst ändern oder entfernen; alte Profilbilder werden dabei gelöscht. Tipp: Fotos vom Handy können versteckte Zusatzdaten enthalten (zum Beispiel den Aufnahmeort). Nimm am besten einen Screenshot oder ein Bild ohne solche Daten.</p>
+    <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO; die Angaben im Profil machst du freiwillig.</p>
+
+    <h2>7. Benachrichtigungen</h2>
+    <p>Damit du siehst, wenn jemand in deinem Thema antwortet oder sich der Status ändert, speichert das Forum Benachrichtigungen mit dem auslösenden Mitglied, dem Thema, einem kurzen Text, dem Zeitpunkt und ob du sie gelesen hast. Es werden keine E-Mails oder Push-Nachrichten verschickt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.</p>
+
+    <h2>8. Anzeige „Mitglieder online“</h2>
+    <p>Solange du angemeldet auf der Seite bist, meldet dein Browser über eine Live-Verbindung zu Supabase, dass du online bist. Dein Benutzername erscheint dann für alle Besucher in der Liste „Mitglieder online“. Gäste werden dabei nur mit einer zufälligen Kennung gezählt und nicht namentlich angezeigt. Die Angabe wird nicht dauerhaft gespeichert und verschwindet, sobald du die Seite schließt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO; unser berechtigtes Interesse ist, dass die Community sieht, wer gerade erreichbar ist. Du kannst dem jederzeit widersprechen (siehe Abschnitt 13).</p>
+
+    <h2>9. Speicher im Browser (keine Cookies)</h2>
+    <p>Das Forum setzt keine Tracking- oder Werbe-Cookies. Damit du angemeldet bleibst, wird eine Anmelde-Sitzung (Zugangsschlüssel) im lokalen Speicher deines Browsers (localStorage) abgelegt; beim Abmelden wird sie entfernt. Außerdem merkt sich die Seite, welche Kategorien du eingeklappt hast (ebenfalls localStorage) und nach welchem Status du gerade filterst (sessionStorage, wird beim Schließen des Tabs gelöscht).</p>
+    <p>Das ist technisch unbedingt erforderlich, damit das Forum so funktioniert, wie du es nutzt. Rechtsgrundlage ist § 25 Abs. 2 Nr. 2 TDDDG und Art. 6 Abs. 1 lit. b und f DSGVO. Du kannst den Speicher jederzeit in deinem Browser löschen.</p>
+
+    <h2>10. Externe Links</h2>
+    <p>Beiträge können Links zu anderen Websites enthalten. Erst wenn du einen Link anklickst, wird die fremde Seite geöffnet; für sie gilt die Datenschutzerklärung des jeweiligen Anbieters. Es werden keine fremden Bilder, Videos oder sonstigen Inhalte automatisch eingebettet.</p>
+
+    <h2>11. Wie lange werden Daten gespeichert?</h2>
+    <p>Kontodaten, Beiträge und Profilangaben speichern wir, solange dein Konto besteht. Wenn dein Konto gelöscht wird, werden dein Konto, dein Profil, dein Profilbild und deine Benachrichtigungen vollständig gelöscht. Deine Themen und Beiträge bleiben zunächst erhalten, damit Unterhaltungen verständlich bleiben, erscheinen aber ohne Verknüpfung zu deinem Konto als „Gelöschtes Mitglied“. Hat dich jemand zitiert oder im Text erwähnt, kann dein Benutzername dort weiterhin stehen. Wenn du möchtest, dass auch deine Beiträge gelöscht oder Zitate entfernt werden, sag uns das bei deiner Anfrage.</p>
+    <p>Du kannst dein Konto nicht selbst löschen. Schreib dafür an den oben genannten Verantwortlichen oder an die Projektleitung im Forum; wir löschen es dann zeitnah, spätestens innerhalb eines Monats. Technische Protokolle bei GitHub und Supabase werden nach kurzer Zeit automatisch gelöscht.</p>
+
+    <h2>12. Weitergabe von Daten</h2>
+    <p>Wir verkaufen keine Daten und geben sie nicht an Dritte weiter, außer an die oben genannten Dienstleister, die das Forum technisch bereitstellen, oder wenn wir gesetzlich dazu verpflichtet sind.</p>
+
+    <h2>13. Deine Rechte</h2>
+    <p>Du hast nach der DSGVO jederzeit das Recht auf:</p>
+    <ul>
+      <li><b>Auskunft</b> über deine gespeicherten Daten (Art. 15 DSGVO)</li>
+      <li><b>Berichtigung</b> falscher Daten (Art. 16 DSGVO)</li>
+      <li><b>Löschung</b> deiner Daten (Art. 17 DSGVO)</li>
+      <li><b>Einschränkung</b> der Verarbeitung (Art. 18 DSGVO)</li>
+      <li><b>Datenübertragbarkeit</b>, also eine Kopie deiner Daten in einem gängigen Format (Art. 20 DSGVO)</li>
+      <li><b>Widerspruch</b> gegen Verarbeitungen, die auf unserem berechtigten Interesse beruhen (Art. 21 DSGVO, siehe unten)</li>
+    </ul>
+    <p>Wende dich dafür an den oben genannten Verantwortlichen. Damit wir sicher sind, dass die Anfrage wirklich von dir kommt, schreib am besten über dein Forenkonto oder nenne deinen Benutzernamen.</p>
+    <div class="notice info"><b>Widerspruchsrecht (Art. 21 DSGVO):</b> Soweit wir Daten auf Grundlage unseres berechtigten Interesses verarbeiten (Art. 6 Abs. 1 lit. f DSGVO, zum Beispiel die Anzeige „Mitglieder online“ oder die Moderation), kannst du dieser Verarbeitung aus Gründen, die sich aus deiner besonderen Situation ergeben, jederzeit widersprechen. Wir verarbeiten die Daten dann nicht mehr, es sei denn, es gibt zwingende schutzwürdige Gründe, die deine Interessen überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen.</div>
+    <p>Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO), zum Beispiel bei der Behörde des Bundeslandes, in dem du wohnst.</p>
+
+    <h2>14. Keine automatisierten Entscheidungen</h2>
+    <p>Es findet keine automatisierte Entscheidungsfindung und kein Profiling statt. Über Bewerbungen, Beschwerden, Entbannungsanträge und Sperren entscheiden immer Menschen aus dem Team.</p>
+
+    <h2>15. Sicherheit</h2>
+    <p>Die Verbindung zum Forum ist per HTTPS verschlüsselt. Wer welche Daten sehen und ändern darf, wird direkt in der Datenbank geprüft und nicht nur im Browser. Passwörter werden nur als nicht umkehrbarer Hash gespeichert.</p>
+
+    <h2>16. Änderungen</h2>
+    <p>Wenn sich das Forum oder die eingesetzten Dienste ändern, passen wir diese Datenschutzerklärung an. Es gilt immer die hier veröffentlichte Fassung.</p>
   </div></section></main></div>`;
 }
 
@@ -1249,12 +1322,19 @@ function adminGeneral(body) {
       <div class="field"><label for="sn">Name des Servers / Forums</label><input id="sn" maxlength="40" required value="${esc(state.settings.site_name)}"></div>
       <div class="field"><label for="st">Untertitel</label><input id="st" maxlength="80" value="${esc(state.settings.site_tagline)}"></div>
     </div>
+    <h2 style="font-size:16px;margin:8px 0 4px">Datenschutz: Verantwortlicher</h2>
+    <p class="small muted" style="margin:0 0 12px">Diese Angaben erscheinen öffentlich in der <a href="#/datenschutz">Datenschutzerklärung</a>. Die DSGVO verlangt Name und eine ladungsfähige Anschrift der verantwortlichen Person sowie einen Kontaktweg.</p>
+    <div class="grid2">
+      <div class="field"><label for="pn">Vor- und Nachname</label><input id="pn" maxlength="100" value="${esc(state.settings.privacy_name || '')}"></div>
+      <div class="field"><label for="pc">Kontakt (E-Mail oder Discord)</label><input id="pc" maxlength="200" value="${esc(state.settings.privacy_contact || '')}"></div>
+    </div>
+    <div class="field"><label for="pa">Anschrift</label><textarea id="pa" maxlength="300" rows="3" placeholder="Straße Hausnummer&#10;PLZ Ort">${esc(state.settings.privacy_address || '')}</textarea></div>
     <button class="btn primary" type="submit">Speichern</button>
   </form></section>
   <div class="notice info">Tipp: Im kostenlosen Supabase-Tarif pausiert die Datenbank nach etwa einer Woche ohne Besucher. Dann im Supabase-Dashboard beim Projekt „Forum“ auf „Restore“ klicken.</div>`;
   $('#ag').onsubmit = async (e) => {
     e.preventDefault();
-    const patch = { site_name: $('#sn').value.trim(), site_tagline: $('#st').value.trim() };
+    const patch = { site_name: $('#sn').value.trim(), site_tagline: $('#st').value.trim(), privacy_name: $('#pn').value.trim(), privacy_address: $('#pa').value.trim(), privacy_contact: $('#pc').value.trim() };
     const { error } = await sb.from('settings').update(patch).eq('id', 1);
     if (error) return toast(errMsg(error), true);
     state.settings = { ...state.settings, ...patch };

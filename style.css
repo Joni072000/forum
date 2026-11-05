@@ -280,3 +280,9 @@ h1, h2, h3, .node-title, .trow-title { font-family: var(--head-font); }
   .grid2 { grid-template-columns: 1fr; }
   .formfield-row { grid-template-columns: 1fr 1fr; }
 }
+
+/* Datenschutzerklärung */
+.privacy h2 { font-size: 17px; margin: 22px 0 6px; color: var(--text-hi); }
+.privacy ul { margin: 0 0 12px; padding-left: 20px; }
+.privacy li { margin: 3px 0; }
+.priv-missing { color: #ff6b6b; font-weight: 600; }
